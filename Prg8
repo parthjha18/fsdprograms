@@ -1,0 +1,225 @@
+2 folders- 
+client
+server
+
+first create server
+
+cd server
+npm init -y
+npm install 
+npm install cors mongoose express
+
+then later for client - same npm create vite @latest counter-client anything
+
+database.js
+
+import mongoose from 'mongoose';
+
+const DB_URL = 'mongodb://127.0.0.1:27017/shop';
+
+// Connect DB
+mongoose.connect(DB_URL)
+  .then(() => console.log('Connected to MongoDB'))
+  .catch(err => console.log(err));
+
+// Schema
+const productSchema = new mongoose.Schema({
+  name: String,
+  price: Number,
+  description: String
+});
+
+// Model
+const Product = mongoose.model('Product', productSchema);
+
+export default Product;
+
+
+products.js--
+
+import { Router } from 'express';
+import Product from './database.js';
+
+const router = Router();
+
+// GET all products
+router.get('/', async (req, res) => {
+  try {
+    const products = await Product.find();
+    res.json(products);
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
+});
+
+// POST add product
+router.post('/', async (req, res) => {
+  try {
+    const newProduct = new Product(req.body);
+    await newProduct.save();
+    res.status(201).json(newProduct);
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
+});
+
+// PUT update product
+router.put('/:id', async (req, res) => {
+  try {
+    const updatedProduct = await Product.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
+    res.json(updatedProduct);
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
+});
+
+// DELETE product
+router.delete('/:id', async (req, res) => {
+  try {
+    await Product.findByIdAndDelete(req.params.id);
+    res.status(204).send();
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
+});
+
+export default router;
+
+server.js--
+
+import express from 'express';
+import cors from 'cors';
+import productsRouter from './products.js';
+
+const app = express();
+
+app.use(express.json());
+app.use(cors());
+
+// Routes
+app.use('/products', productsRouter);
+
+// Root (optional)
+app.get('/', (req, res) => {
+  res.send("API is running");
+});
+
+const PORT = process.env.PORT || 5001;
+
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+});
+
+CLIENT--
+
+App.jsx--
+import { useState, useEffect } from "react";
+import ProductList from "./ProductList";
+import AddProduct from "./AddProduct";
+
+const App = () => {
+  const [products, setProducts] = useState([]);
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  async function fetchProducts() {
+    const res = await fetch("http://localhost:5001/products");
+    const data = await res.json();
+    setProducts(data);
+  }
+
+  return (
+    <div style={{ padding: "20px" }}>
+      <ProductList products={products} />
+      <AddProduct fetchProducts={fetchProducts} />
+    </div>
+  );
+};
+
+export default App;
+
+ProductList.jsx--
+const ProductList = ({ products }) => {
+  return (
+    <>
+      <h1>Product List</h1>
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Price</th>
+          </tr>
+        </thead>
+        <tbody>
+          {products.map((p) => (
+            <tr key={p._id}>
+              <td>{p.name}</td>
+              <td>{p.description}</td>
+              <td>{p.price}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </>
+  );
+};
+
+export default ProductList;
+
+AddProduct.jsx--
+import { useState } from "react";
+
+const AddProduct = ({ fetchProducts }) => {
+  const [newProduct, setNewProduct] = useState({
+    name: "",
+    price: "",
+    description: ""
+  });
+
+  async function handleAddProduct() {
+    await fetch("http://localhost:5001/products", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(newProduct)
+    });
+
+    setNewProduct({ name: "", price: "", description: "" });
+    fetchProducts();
+  }
+
+  return (
+    <>
+      <h2>Add Product</h2>
+      <input
+        placeholder="Name"
+        value={newProduct.name}
+        onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+      />
+      <input
+        placeholder="Description"
+        value={newProduct.description}
+        onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
+      />
+      <input
+        type="number"
+        placeholder="Price"
+        value={newProduct.price}
+        onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
+      />
+      <button onClick={handleAddProduct}>Add</button>
+    </>
+  );
+};
+
+export default AddProduct;
+
+
