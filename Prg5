@@ -1,0 +1,52 @@
+Create folder and open folder and run this in terminal-
+npm create vite @latest counter-app(or something like that)
+after choosing everything should do , npm install
+
+IssueTracker.jsx--
+
+
+
+const issues = [
+  { id: 1, title: "ejhgwhff", description: "sdjfwhf", status: "open" },
+  { id: 2, title: "ejhgwhff", description: "sdjfwhf", status: "open" },
+  { id: 3, title: "ejhgwhff", description: "sdjfwhf", status: "open" }
+];
+
+
+function IssueTracker() {
+  return (
+    <div>
+      <h1>Issue Tracker</h1>
+      <ul>
+        {issues.map(issue => (
+          <li key={issue.id}>
+            <h2>{issue.title}</h2>
+            <p>{issue.description}</p>
+            <span>Status: {issue.status}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+
+export default IssueTracker;
+
+
+App.jsx--
+
+import IssueTracker from './IssueTracker';
+
+
+function App() {
+  return (
+    <div>
+      <IssueTracker />
+    </div>
+  );
+}
+
+
+export default App;
+
